@@ -1,25 +1,19 @@
+import 'jquery';
+import 'popper.js';
+import 'bootstrap';
 import 'styles/index.scss';
 import 'leaflet';
 import 'leaflet.path.drag';
 import 'leaflet-editable';
 
-let startPoint = [43.1249, 1.254];
-const tileUrl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png';
-const mapBoxAccessToken = 'pk.eyJ1IjoiYWFtaXJtdWthcmFtIiwiYSI6ImNqZmF5czJkcjF6cWsyd25yd2JkdHQ3djkifQ.DZAJFDVfGGd1JqwTq9tcbw';
-
 let map = L.map('map', {
-    editable: true ,
+    editable: true,
     crs: L.CRS.Simple
 });
 
-// L.tileLayer(tileUrl + '?access_token=' + mapBoxAccessToken, {
-//     maxZoom: 20,
-//     attribution: 'attribution',
-//     id: 'mapbox.streets'
-// }).addTo(map);
 
-let bounds = [[0,0], [1000,1000]];
-L.imageOverlay('https://brightcove04pmdo-a.akamaihd.net/4221396001/4221396001_5743059500001_5743053792001-vs.jpg?pubId=4221396001&videoId=5743053792001', bounds).addTo(map);
+let bounds = [[0, 0], [513, 912]];
+L.imageOverlay('https://brightcove04pmdo-a.akamaihd.net/4221396001/4221396001_5743059500001_5743053792001-vs.jpg', bounds).addTo(map);
 map.fitBounds(bounds);
 
 
@@ -28,14 +22,15 @@ L.NewPolygonControl = L.Control.extend({
         position: 'topleft'
     },
     onAdd: function (map) {
-        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
-            link = L.DomUtil.create('a', '', container);
-        link.href = '#';
-        link.title = 'Create a new polygon';
-        link.innerHTML = '▱';
+        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+        let link = Object.assign(L.DomUtil.create('a', '', container), {
+            href: '#',
+            title: 'Create a new polygon',
+            innerHTML: '▱'
+        });
         L.DomEvent.on(link, 'click', L.DomEvent.stop)
             .on(link, 'click', function () {
-                map.editTools.startPolygon();
+                map.editTools.startPolygon();// Creates new polygon
             });
         container.style.display = 'block';
         map.editTools.on('editable:enabled', function (e) {
@@ -47,21 +42,21 @@ L.NewPolygonControl = L.Control.extend({
         return container;
     }
 });
-
 L.AddPolygonShapeControl = L.Control.extend({
     options: {
         position: 'topleft'
     },
     onAdd: function (map) {
-        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
-            link = L.DomUtil.create('a', '', container);
-        link.href = '#';
-        link.title = 'Create a new polygon';
-        link.innerHTML = '▱▱';
+        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+        let link = Object.assign(L.DomUtil.create('a', '', container), {
+            href: '#',
+            title: 'Create a new polygon',
+            innerHTML: '▱▱'
+        });
         L.DomEvent.on(link, 'click', L.DomEvent.stop)
             .on(link, 'click', function () {
                 if (!map.editTools.currentPolygon) return;
-                map.editTools.currentPolygon.editor.newShape();
+                map.editTools.currentPolygon.editor.newShape();// Creates new shape from current polygon
             });
         container.style.display = 'none';
         map.editTools.on('editable:enabled', function (e) {
@@ -109,5 +104,14 @@ map.editTools.on('editable:disable', function (e) {
 //poly.enableEdit();
 
 
-// map._onResize();
-setTimeout(function(){map.invalidateSize();});
+setTimeout(function () {
+    map.invalidateSize();
+});
+
+document.getElementById('saveBtn').addEventListener('click', event => {
+    map.eachLayer(layer => {
+        if (layer instanceof L.Polygon) {
+            console.log('layer', layer.toGeoJSON());
+        }
+    });
+});
