@@ -3,7 +3,6 @@ import 'popper.js';
 import 'bootstrap';
 import 'styles/index.scss';
 import 'leaflet';
-import 'leaflet.path.drag';
 import 'leaflet-editable';
 
 let map = L.map('map', {
@@ -14,7 +13,7 @@ let map = L.map('map', {
 
 let bounds = [[0, 0], [513, 912]];
 let imageLayer = L.imageOverlay('https://brightcove04pmdo-a.akamaihd.net/4221396001/4221396001_5743059500001_5743053792001-vs.jpg', bounds).addTo(map);
-map.fitBounds(bounds);
+map.fitBounds(imageLayer.getBounds());
 
 let groupLayers = {
     layerCar: new L.LayerGroup(),
@@ -24,118 +23,66 @@ let groupLayers = {
 };
 
 _.each(groupLayers, (layer) => {
-    layer.addTo(map);
+    map.addLayer(layer);
 });
 
 let groupLayerSelected = null;
 
-
-L.NewPolygonControl = L.Control.extend({
-    options: {
-        position: 'topleft'
-    },
-    onAdd: function (map) {
-        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
-        let link = Object.assign(L.DomUtil.create('a', '', container), {
-            href: '#',
-            title: 'Create a new polygon',
-            innerHTML: '▱'
-        });
-        L.DomEvent.on(link, 'click', L.DomEvent.stop)
-            .on(link, 'click', function () {
-                if (!groupLayerSelected) return;
-
-                map.editTools.startPolygon();// Creates new polygon
-            });
-        container.style.display = 'block';
-        map.editTools.on('editable:enabled', function (e) {
-            container.style.display = 'none';
-        });
-        map.editTools.on('editable:disable', function (e) {
-            container.style.display = 'block';
-        });
-        return container;
-    }
-});
-L.AddPolygonShapeControl = L.Control.extend({
-    options: {
-        position: 'topleft'
-    },
-    onAdd: function (map) {
-        let container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
-        let link = Object.assign(L.DomUtil.create('a', '', container), {
-            href: '#',
-            title: 'Create a new polygon',
-            innerHTML: '▱▱'
-        });
-        L.DomEvent.on(link, 'click', L.DomEvent.stop)
-            .on(link, 'click', function () {
-                if (!map.editTools.currentPolygon) return;
-                map.editTools.currentPolygon.editor.newShape();// Creates new shape from current polygon
-            });
-        container.style.display = 'none';
-        map.editTools.on('editable:enabled', function (e) {
-            container.style.display = 'block';
-        });
-        map.editTools.on('editable:disable', function (e) {
-            container.style.display = 'none';
-        });
-        return container;
-    }
-});
-
-map.addControl(new L.NewPolygonControl());
-map.addControl(new L.AddPolygonShapeControl());
-
 map.on('layeradd', (e) => {
-    if (e.layer instanceof L.Polygon) {
-        e.layer.on('dblclick', L.DomEvent.stop).on('dblclick', e.layer.toggleEdit)
+    if (e.layer instanceof L.Polyline) {
+        e.layer.on('click', L.DomEvent.stop).on('click', e.layer.toggleEdit)
     }
 });
 
 map.on('layerremove', (e) => {
-    if (e.layer instanceof L.Polygon) {
-        e.layer.off('dblclick', L.DomEvent.stop).off('dblclick', e.layer.toggleEdit);
+    if (e.layer instanceof L.Polyline) {
+        e.layer.off('click', L.DomEvent.stop).off('click', e.layer.toggleEdit);
     }
 });
 
-map.on('editable:drawing:end', function (e) {
+map.on('editable:drawing:end', (e) => {
     groupLayers[groupLayerSelected].addLayer(e.layer);
+    //map.editTools.startPolyline();
 });
 
-map.editTools.on('editable:enable', function (e) {
-    if (this.currentPolygon) this.currentPolygon.disableEdit();
-    this.currentPolygon = e.layer;
-    this.fire('editable:enabled');
-});
-map.editTools.on('editable:disable', function (e) {
-    delete this.currentPolygon;
+map.on('editable:vertex:click', (e) => {
+    let layers = e.layer.getLatLngs();
+    let idx = layers.findIndex((latlng) => {
+        return e.latlng.lat === latlng.lat && e.latlng.lng === latlng.lng;
+    });
+
+    if (idx === 0) { //Connect the vertex
+        e.layer.addLatLng(e.latlng);
+        map.editTools.commitDrawing();
+        e.cancel();
+    } else if (idx < layers.length - 1) { //Stop from removing
+        e.cancel();
+    }
 });
 
-// let poly = L.polygon([
+
+// let multi = L.polygon([
 //     [
-//         [43.1239, 1.259],
-//         [43.123, 1.263],
-//         [43.1252, 1.265],
-//         [43.1250, 1.261]
-//     ],
-//     [
-//         [43.124, 1.263],
-//         [43.1236, 1.261],
-//         [43.12475, 1.262]
+//         [
+//             [456.43396,180.243011],
+//             [530.43396,181.243011],
+//             [625.43396,92.243011],
+//             [539.43396,35.243011],
+//             [409.43396,113.243011],
+//             [446.43396,175.243011],
+//         ]
 //     ]
 // ]).addTo(map);
-
-//poly.enableEdit();
+// multi.enableEdit();
 
 
 setTimeout(function () {
     map.invalidateSize();
-}, 100);
+}, 500);
 
 document.getElementById('saveBtn').addEventListener('click', event => {
     map.eachLayer(layer => {
-        if (layer instanceof L.Polygon) {
+        if (layer instanceof L.Polyline) {
             console.log('layer', layer.toGeoJSON());
         }
     });
@@ -144,16 +91,11 @@ document.getElementById('saveBtn').addEventListener('click', event => {
 document.getElementById('layerGroup').addEventListener('click', event => {
     if (event.target.id === 'layerGroup') return;
 
-    if (~event.target.className.indexOf('btn-danger')) {
-        event.target.className = 'btn btn-secondary btn-lg btn-block';
-        groupLayerSelected = null;
-        return;
-    }
-
     _.each(event.currentTarget.children, (element) => {
         element.className = 'btn btn-secondary btn-lg btn-block';
     });
 
     event.target.className = 'btn btn-danger btn-lg btn-block';
     groupLayerSelected = event.target.id;
+    map.editTools.startPolyline();
 });
