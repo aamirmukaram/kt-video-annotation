@@ -92,6 +92,12 @@ module.exports = {
                 options: {
                     name: '[path][name].[ext]'
                 }
+            },
+
+            // FONTS
+            {
+                test: /\.(eot|svg|ttf|woff|woff2)$/,
+                loader: 'url-loader'
             }
         ]
     }

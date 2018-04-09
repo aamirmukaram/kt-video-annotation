@@ -20,9 +20,16 @@
         <div class="save-btn">
             <button type="button" class="btn btn-primary btn-lg btn-block" id="saveBtn">Save</button>
         </div>
+
+        <label id="init-annotation" class="btn btn-secondary btn-lg btn-block">Init Annotation</label>
     </aside>
-    <section>
+    <section class="main">
         <article id="map" class="map"></article>
+
+        <video id="my-player" class="video-js"
+               data-setup='{"controls": true, "autoplay": false, "preload": "auto"}'>
+            <source src="assets/sample.mp4" type="video/mp4">
+        </video>
     </section>
 </main>
 </body>

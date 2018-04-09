@@ -1,5 +1,6 @@
 @import "~bootstrap/scss/bootstrap";
 @import "~leaflet/dist/leaflet.css";
+@import "~video.js/dist/video-js";
 
 .hide {
     display: none;
@@ -41,8 +42,15 @@ main.app-container {
     }
 }
 
-article.map {
-    height: 100%;
+section.main {
+    article.map {
+        height: 50%;
+    }
+
+    .video-js {
+        height: 50%;
+        width: 50%;
+    }
 }
 
 .leaflet-div-icon {
